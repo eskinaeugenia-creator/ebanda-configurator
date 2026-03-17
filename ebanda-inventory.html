@@ -2,6 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EBanda — Управление складом</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -562,6 +564,44 @@
   }
   .toast.show { transform: translateY(0); opacity: 1; }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://nljgejiggwybjfdssjsy.supabase.co';
+const SUPABASE_KEY = 'SUPABASE_ANON_KEY_HERE';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadFromSupabase() {
+  try {
+    const { data, error } = await _sb.from('inventory').select('*');
+    if (error || !data?.length) return null;
+    const inv = {};
+    data.forEach(row => {
+      inv[row.id] = {
+        qty: row.qty || 0,
+        used: JSON.parse(row.used || '[]'),
+        note: row.note || ''
+      };
+    });
+    return inv;
+  } catch(e) { return null; }
+}
+
+async function saveToSupabase(inv) {
+  try {
+    const rows = Object.entries(inv).map(([id, data]) => ({
+      id,
+      qty: data.qty || 0,
+      used: JSON.stringify(data.used || []),
+      note: data.note || '',
+      updated_at: new Date().toISOString()
+    }));
+    const { error } = await _sb.from('inventory').upsert(rows, { onConflict: 'id' });
+    return !error;
+  } catch(e) { return false; }
+}
+</script>
+
 </head>
 <body>
 
@@ -1211,7 +1251,39 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+
+  // ── ЗАЩИТА СКЛАДА ── только владелец
+  const _tg = window.Telegram?.WebApp;
+  if (_tg) { _tg.ready(); _tg.expand(); }
+  
+  // ВСТАВЬ СЮДА СВОЙ TELEGRAM USER ID:
+  const OWNER_ID = null; // например: 123456789
+  
+  const _userId = _tg?.initDataUnsafe?.user?.id || null;
+  
+  function checkOwner() {
+    if (!OWNER_ID) return; // если не задан — пускаем всех (для теста)
+    if (_userId !== OWNER_ID) {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:rgba(255,255,255,0.3);font-family:Inter,sans-serif;font-size:14px;text-align:center;padding:20px;">🔒 Доступ только для владельца</div>';
+    }
+  }
+  
 // ── INIT ──
+
+  // ── TELEGRAM GUARD — только для владельца ──
+  const tgApp = window.Telegram?.WebApp;
+  if (tgApp) {
+    tgApp.ready();
+    tgApp.expand();
+    // Замени на свой Telegram user ID
+    // Узнать свой ID: напиши @userinfobot в Telegram
+    const OWNER_ID = null; // ← ВСТАВЬ СВОЙ ID сюда, например: 123456789
+
+    const userId = tgApp.initDataUnsafe?.user?.id;
+    if (OWNER_ID && userId !== OWNER_ID) {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#555;font-family:Montserrat;font-size:14px;text-align:center;padding:32px;">🔒<br><br>Доступ закрыт.<br>Этот раздел только для администратора.</div>';
+    }
+  }
   // Баннер если открыто через file://
   if (window.location.protocol === 'file:') {
     const banner = document.createElement('div');
@@ -1221,7 +1293,8 @@ function showToast(msg) {
   }
 
 (async () => {
-  await loadInventory();
+  await checkOwner();
+  loadInventoryAsync();
   renderCurrentTab();
   updateStats();
   updateBadges();
