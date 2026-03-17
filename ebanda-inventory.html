@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EBanda — Управление складом</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0a0a0a;
+    --bg2:      #111;
+    --bg3:      #161616;
+    --card:     #141414;
+    --border:   #1f1f1f;
+    --border2:  #2a2a2a;
+    --orange:   #f08000;
+    --orange2:  rgba(240,128,0,0.12);
+    --orange3:  rgba(240,128,0,0.06);
+    --green:    #4caf50;
+    --green2:   rgba(76,175,80,0.12);
+    --red:      #e53935;
+    --red2:     rgba(229,57,53,0.12);
+    --yellow:   #ffb300;
+    --yellow2:  rgba(255,179,0,0.12);
+    --blue:     #2196f3;
+    --blue2:    rgba(33,150,243,0.1);
+    --text:     #e8e8e8;
+    --text2:    rgba(255,255,255,0.5);
+    --text3:    rgba(255,255,255,0.25);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-logo {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: var(--orange);
+    text-transform: uppercase;
+  }
+  .topbar-logo span { color: var(--text2); font-weight: 400; font-size: 11px; margin-left: 10px; letter-spacing: 2px; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .btn-save {
+    background: var(--orange);
+    color: #000;
+    border: none;
+    padding: 8px 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: opacity 0.2s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-export {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+    padding: 8px 16px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .btn-export:hover { border-color: var(--orange); color: var(--orange); }
+  .last-saved { font-size: 11px; color: var(--text3); }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .sidebar-section { margin-bottom: 8px; }
+  .sidebar-title {
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 0 20px;
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+  .sidebar-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-btn:hover { background: var(--bg3); color: var(--text); }
+  .sidebar-btn.active { color: var(--orange); border-left-color: var(--orange); background: var(--orange3); }
+  .sidebar-btn .icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-btn .badge {
+    margin-left: auto;
+    background: var(--red2);
+    color: var(--red);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+  }
+  .sidebar-btn .badge.ok { background: var(--green2); color: var(--green); }
+  .sidebar-btn .badge.warn { background: var(--yellow2); color: var(--yellow); }
+
+  /* ── MAIN ── */
+  .main {
+    padding: 32px;
+    background: var(--bg);
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .page-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .page-subtitle { font-size: 12px; color: var(--text3); letter-spacing: 0.3px; }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 20px;
+  }
+  .stat-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  .stat-value { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 26px; color: var(--text); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── INVENTORY TABLE ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    margin-top: 28px;
+  }
+  .section-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    height: 1px;
+    width: 40px;
+    background: var(--border2);
+    display: inline-block;
+  }
+  .add-btn {
+    background: var(--orange2);
+    border: 1px solid rgba(240,128,0,0.3);
+    color: var(--orange);
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .add-btn:hover { background: rgba(240,128,0,0.2); }
+
+  .inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .inv-table th {
+    background: var(--bg3);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .inv-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .inv-table tr:last-child td { border-bottom: none; }
+  .inv-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .item-name {
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .item-sku { font-size: 10px; color: var(--text3); font-family: 'Montserrat', sans-serif; letter-spacing: 1px; }
+
+  /* Status badge */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .status::before { content: '●'; font-size: 7px; }
+  .status.in-stock { background: var(--green2); color: var(--green); }
+  .status.low-stock { background: var(--yellow2); color: var(--yellow); }
+  .status.out { background: var(--red2); color: var(--red); }
+  .status.used { background: var(--blue2); color: var(--blue); }
+
+  /* Quantity control */
+  .qty-wrap { display: flex; align-items: center; gap: 0; }
+  .qty-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.15s;
+    font-weight: 300;
+    flex-shrink: 0;
+  }
+  .qty-btn:hover { background: var(--border2); color: var(--text); }
+  .qty-btn:first-child { border-radius: 2px 0 0 2px; }
+  .qty-btn:last-child { border-radius: 0 2px 2px 0; }
+  .qty-input {
+    width: 44px;
+    height: 28px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-left: none;
+    border-right: none;
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    outline: none;
+  }
+  .qty-input:focus { border-color: var(--orange); background: var(--bg3); }
+
+  /* Used units */
+  .used-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .used-count {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .used-badge {
+    background: var(--blue2);
+    color: var(--blue);
+    border: 1px solid rgba(33,150,243,0.25);
+    border-radius: 2px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .used-badge:hover { background: rgba(33,150,243,0.2); }
+  .used-label { font-size: 10px; color: var(--text3); }
+
+  /* Discount for used */
+  .discount-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .discount-input {
+    width: 52px;
+    height: 28px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    color: var(--orange);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .discount-input:focus { border-color: var(--orange); }
+  .discount-label { font-size: 11px; color: var(--text3); }
+  .discount-preview { font-size: 11px; color: var(--orange); font-weight: 600; margin-left: 4px; }
+
+  /* Actions */
+  .row-actions { display: flex; gap: 6px; }
+  .action-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text3);
+    width: 28px;
+    height: 28px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .action-btn.del:hover { border-color: var(--red); color: var(--red); }
+
+  /* Notes */
+  .note-input {
+    background: var(--bg2);
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: var(--text2);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    padding: 5px 8px;
+    width: 160px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .note-input:focus { border-color: var(--border2); background: var(--bg3); color: var(--text); }
+  .note-input::placeholder { color: var(--text3); font-style: italic; }
+
+  /* Low stock warning */
+  .low-warn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--yellow2);
+    border: 1px solid rgba(255,179,0,0.2);
+    border-radius: 3px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-top: 6px;
+    margin-bottom: 20px;
+  }
+  .low-warn span { font-weight: 600; }
+
+  /* Section tabs */
+  .section-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text3);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text2); }
+  .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+  /* Page sections */
+  .page-section { display: none; }
+  .page-section.active { display: block; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  /* USED UNITS expanded row */
+  .used-details-row td {
+    background: rgba(33,150,243,0.04);
+    padding: 10px 14px 10px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+  .used-items-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .used-item-card {
+    background: var(--bg3);
+    border: 1px solid rgba(33,150,243,0.2);
+    border-radius: 3px;
+    padding: 8px 12px;
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .used-item-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .used-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .used-item-row input {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    color: var(--orange);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+    width: 48px;
+    height: 26px;
+    outline: none;
+    padding: 0 4px;
+  }
+  .add-used-btn {
+    background: rgba(33,150,243,0.08);
+    border: 1px dashed rgba(33,150,243,0.3);
+    color: var(--blue);
+    border-radius: 3px;
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 120px;
+    text-align: center;
+    transition: all 0.2s;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+  .add-used-btn:hover { background: rgba(33,150,243,0.15); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--green);
+    border-radius: 3px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">EBanda <span>/ Склад</span></div>
+  <div class="topbar-right">
+    <span class="last-saved" id="lastSaved">Не сохранено</span>
+    <a href="ebanda-configurator.html" style="background:transparent;color:var(--text2);border:1px solid var(--border2);padding:8px 16px;font-family:Inter,sans-serif;font-weight:500;font-size:11px;letter-spacing:1px;cursor:pointer;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">⚙ Конфигуратор</a><button class="btn-export" onclick="exportJSON()">↓ Экспорт JSON</button>
+    <button class="btn-save" onclick="saveInventory()">Сохранить</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-title">Разделы</div>
+    <button class="sidebar-btn active" onclick="showTab('boards')">
+      <span class="icon">🏄</span> Доски
+      <span class="badge ok" id="badge-boards">4</span>
+    </button>
+    <button class="sidebar-btn" onclick="showTab('masts')">
+      <span class="icon">📏</span> Мачты
+      <span class="badge" id="badge-masts">—</span>
+    </button>
+    <button class="sidebar-btn" onclick="showTab('motors')">
+      <span class="icon">⚡</span> Моторы
+      <span class="badge" id="badge-motors">—</span>
+    </button>
+    <button class="sidebar-btn" onclick="showTab('wings-front')">
+      <span class="icon">🔷</span> Перед. крылья
+      <span class="badge" id="badge-wings-front">—</span>
+    </button>
+    <button class="sidebar-btn" onclick="showTab('wings-rear')">
+      <span class="icon">🔹</span> Задн. крылья
+      <span class="badge" id="badge-wings-rear">—</span>
+    </button>
+    <button class="sidebar-btn" onclick="showTab('batteries')">
+      <span class="icon">🔋</span> Батареи
+      <span class="badge" id="badge-batteries">—</span>
+    </button>
+    <button class="sidebar-btn" onclick="showTab('chargers')">
+      <span class="icon">🔌</span> Зарядки
+      <span class="badge" id="badge-chargers">—</span>
+    </button>
+    <div class="sidebar-title">Аксессуары</div>
+    <button class="sidebar-btn" onclick="showTab('addons')">
+      <span class="icon">📦</span> Допы
+      <span class="badge" id="badge-addons">—</span>
+    </button>
+    <button class="sidebar-btn" onclick="showTab('remote')">
+      <span class="icon">🎮</span> Пульт
+      <span class="badge" id="badge-remote">—</span>
+    </button>
+    <div class="sidebar-title">Сводка</div>
+    <button class="sidebar-btn" onclick="showTab('summary')">
+      <span class="icon">📊</span> Остатки / Отчёт
+    </button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- STATS -->
+    
+    <!-- INFO BANNER -->
+    <div style="background:rgba(240,128,0,0.06);border:1px solid rgba(240,128,0,0.15);border-radius:4px;padding:14px 20px;margin-bottom:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;flex-shrink:0;">🟢</span>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#4caf50;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">В наличии</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">qty > 0 — товар доступен в конфигураторе сразу</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;flex-shrink:0;">🔵</span>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#2196f3;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Б/У</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">qty = 0, есть Б/У — комплект получает −100 000 ₽ в конфигураторе</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;flex-shrink:0;">🟡</span>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#ffb300;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Под заказ</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">qty = 0, нет Б/У — помечается "под заказ" в конфигураторе</div>
+        </div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Позиций всего</div>
+        <div class="stat-value orange" id="stat-total">0</div>
+        <div class="stat-sub">уникальных SKU</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">В наличии</div>
+        <div class="stat-value green" id="stat-instock">0</div>
+        <div class="stat-sub">позиций</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Мало / 0</div>
+        <div class="stat-value red" id="stat-low">0</div>
+        <div class="stat-sub">требуют внимания</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Б/У единиц</div>
+        <div class="stat-value" style="color:var(--blue)" id="stat-used">0</div>
+        <div class="stat-sub">со скидкой</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="section-tabs" id="tabStrip"></div>
+
+    <!-- CONTENT -->
+    <div id="tabContent"></div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA STRUCTURE ──
+const CATALOG = {
+  boards: {
+    label: 'Доски',
+    items: [
+      { id: 'board-pro-lite',  name: 'Flyer EVO PRO LITE',  sku: 'EVO-BRD-PLITE', price: 540000 },
+      { id: 'board-pro-plus',  name: 'Flyer EVO PRO PLUS',  sku: 'EVO-BRD-PPLUS', price: 560000 },
+      { id: 'board-max',       name: 'Flyer EVO MAX',        sku: 'EVO-BRD-MAX',   price: 600000 },
+      { id: 'board-master',    name: 'Flyer EVO MASTER',     sku: 'EVO-BRD-MST',   price: 660000 },
+    ]
+  },
+  masts: {
+    label: 'Мачты',
+    items: [
+      { id: 'mast-27',     name: '27 Mast (69 см · Алюминий)', sku: 'EVO-MST-27',   price: 57000 },
+      { id: 'mast-31c',    name: '31 Mast Carbon (79 см)',     sku: 'EVO-MST-31C',  price: 142000 },
+      { id: 'mast-35',     name: '35 Mast (89 см · Алюминий)', sku: 'EVO-MST-35',   price: 74000 },
+    ]
+  },
+  motors: {
+    label: 'Моторы',
+    items: [
+      { id: 'motor-std',  name: 'Propulsion Unit Standard 4000W', sku: 'EVO-MTR-STD',  price: 70000 },
+      { id: 'motor-perf', name: 'Propulsion Unit Performance 6000W', sku: 'EVO-MTR-PRF', price: 92000 },
+      { id: 'motor-elite',name: 'Propulsion Unit Elite 6000W CNC',   sku: 'EVO-MTR-ELT', price: 120000 },
+    ]
+  },
+  'wings-front': {
+    label: 'Передние крылья',
+    items: [
+      { id: 'fw-glider-g1500',      name: 'Glider G1500',      sku: 'EVO-FW-GG1500', price: 30000 },
+      { id: 'fw-glider-c1500',      name: 'Glider C1500',      sku: 'EVO-FW-GC1500', price: 58000 },
+      { id: 'fw-glider-c1100',      name: 'Glider C1100',      sku: 'EVO-FW-GC1100', price: 49000 },
+      { id: 'fw-voyager-g1500',     name: 'Voyager G1500',     sku: 'EVO-FW-VG1500', price: 40500 },
+      { id: 'fw-voyager-c1500',     name: 'Voyager C1500',     sku: 'EVO-FW-VC1500', price: 57000 },
+      { id: 'fw-voyager-c1300',     name: 'Voyager C1300',     sku: 'EVO-FW-VC1300', price: 53000 },
+      { id: 'fw-voyager-g1100',     name: 'Voyager G1100',     sku: 'EVO-FW-VG1100', price: 26000 },
+      { id: 'fw-voyager-c1100',     name: 'Voyager C1100',     sku: 'EVO-FW-VC1100', price: 49000 },
+      { id: 'fw-gliding-pro-c1100', name: 'Gliding Pro C1100', sku: 'EVO-FW-GPC1100',price: 48000 },
+      { id: 'fw-gliding-c660',      name: 'Gliding C660',      sku: 'EVO-FW-GC660',  price: null  },
+    ]
+  },
+  'wings-rear': {
+    label: 'Задние крылья',
+    items: [
+      { id: 'rw-gliding-320', name: 'Gliding Tail 320', sku: 'EVO-RW-G320', price: 13000 },
+      { id: 'rw-surfing-322', name: 'Surfing Tail 322', sku: 'EVO-RW-S322', price: 25000 },
+    ]
+  },
+  batteries: {
+    label: 'Батареи',
+    items: [
+      { id: 'batt-1800', name: 'Powerflight Battery 18 (1800Wh · 36Ah)', sku: 'EVO-BAT-18', price: 220000 },
+      { id: 'batt-2300', name: 'Powerflight Battery 23 (2300Wh · 45Ah)', sku: 'EVO-BAT-23', price: 260000 },
+    ]
+  },
+  chargers: {
+    label: 'Зарядные устройства',
+    items: [
+      { id: 'chg-600',  name: 'Powerflight Charger 600W',  sku: 'EVO-CHG-600',  price: 50000 },
+      { id: 'chg-1500', name: 'Powerflight Charger 1500W', sku: 'EVO-CHG-1500', price: 75000 },
+    ]
+  },
+  addons: {
+    label: 'Аксессуары',
+    items: [
+      { id: 'bag-90',    name: 'Board Bag PRO 90L',   sku: 'EVO-ACC-BAG90',   price: 20000 },
+      { id: 'bag-130',   name: 'Board Bag MAX 130L',  sku: 'EVO-ACC-BAG130',  price: 20000 },
+      { id: 'bag-75',    name: 'Board Bag MASTER 75L',sku: 'EVO-ACC-BAG75',   price: 20000 },
+      { id: 'mastbag-g', name: 'Mast Bag Grey',       sku: 'EVO-ACC-MBGR',    price: 10000 },
+      { id: 'mastbag-b', name: 'Mast Bag Black',      sku: 'EVO-ACC-MBBK',    price: 10000 },
+      { id: 'mover-s',   name: 'Mover-S',             sku: 'EVO-ACC-MOVS',    price: 12000 },
+      { id: 'mover-l',   name: 'Mover-L',             sku: 'EVO-ACC-MOVL',    price: 12000 },
+      { id: 'prop-evo',  name: 'EVO Propeller',       sku: 'EVO-ACC-PROP',    price: 4000  },
+      { id: 'prop-foil', name: 'Foiling Propeller',   sku: 'EVO-ACC-FPROP',   price: 35000 },
+      { id: 'jet-drive', name: 'Jet Drive',           sku: 'EVO-ACC-JET',     price: 50000 },
+      { id: 'scooter',   name: 'Scooter Kit',         sku: 'EVO-ACC-SCT',     price: 110000},
+      { id: 'pod-90',    name: 'EVO Pod 90L',         sku: 'EVO-ACC-POD90',   price: 37000 },
+      { id: 'pod-130',   name: 'EVO Pod 130L',        sku: 'EVO-ACC-POD130',  price: 37000 },
+    ]
+  },
+  remote: {
+    label: 'Пульт',
+    items: [
+      { id: 'remote', name: 'EVO Remote', sku: 'EVO-ACC-REM', price: 30000 },
+    ]
+  }
+};
+
+// ── INVENTORY STATE (loaded from localStorage) ──
+let INV = {};
+
+
+  // ── IndexedDB Storage (работает в file://) ──
+  const DB_NAME = 'ebanda_db';
+  const DB_STORE = 'inventory';
+  let _db = null;
+  let _memFallback = {};
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      if (_db) { resolve(_db); return; }
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = e => {
+        e.target.result.createObjectStore(DB_STORE);
+      };
+      req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+      req.onerror = e => { console.warn('IDB error', e); resolve(null); };
+    });
+  }
+
+  async function idbGet(key) {
+    try {
+      const db = await openDB();
+      if (!db) return _memFallback[key] || null;
+      return new Promise(resolve => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(_memFallback[key] || null);
+      });
+    } catch(e) { return _memFallback[key] || null; }
+  }
+
+  async function idbSet(key, val) {
+    _memFallback[key] = val;
+    try {
+      const db = await openDB();
+      if (!db) return;
+      return new Promise(resolve => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).put(val, key);
+        tx.oncomplete = resolve;
+        tx.onerror = resolve;
+      });
+    } catch(e) {}
+  }
+
+  async function loadInventory() {
+  const saved = await idbGet('ebanda_inventory');
+  if (saved) {
+    INV = typeof saved === 'string' ? JSON.parse(saved) : saved;
+  } else {
+    // Initialize with zeros
+    for (const [cat, data] of Object.entries(CATALOG)) {
+      for (const item of data.items) {
+        INV[item.id] = { qty: 0, used: [], note: '' };
+      }
+    }
+  }
+}
+
+async function saveInventory() {
+  // Collect all current values from DOM
+  collectFromDOM();
+  await idbSet('ebanda_inventory', INV);
+  const now = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('lastSaved').textContent = 'Сохранено в ' + now;
+  showToast('✓ Данные сохранены');
+  updateStats();
+  updateBadges();
+}
+
+function collectFromDOM() {
+  // Read all qty inputs
+  document.querySelectorAll('.qty-input').forEach(inp => {
+    const id = inp.dataset.id;
+    if (id) {
+      if (!INV[id]) INV[id] = { qty: 0, used: [], note: '' };
+      INV[id].qty = parseInt(inp.value) || 0;
+    }
+  });
+  // Read notes
+  document.querySelectorAll('.note-input').forEach(inp => {
+    const id = inp.dataset.id;
+    if (id) {
+      if (!INV[id]) INV[id] = { qty: 0, used: [], note: '' };
+      INV[id].note = inp.value;
+    }
+  });
+  // Read used discounts
+  document.querySelectorAll('.used-discount-input').forEach(inp => {
+    const id = inp.dataset.id;
+    const idx = parseInt(inp.dataset.idx);
+    if (id && INV[id] && INV[id].used[idx] !== undefined) {
+      INV[id].used[idx].discount = parseInt(inp.value) || 0;
+    }
+  });
+}
+
+// ── CURRENT TAB ──
+let currentTab = 'boards';
+
+function showTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.sidebar-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick')?.includes(`'${tab}'`));
+  });
+  renderCurrentTab();
+}
+
+function renderCurrentTab() {
+  const content = document.getElementById('tabContent');
+
+  if (currentTab === 'summary') {
+    renderSummary();
+    return;
+  }
+
+  const cat = CATALOG[currentTab];
+  if (!cat) return;
+
+  let lowItems = [];
+
+  let html = `
+    <div class="section-header">
+      <div class="section-title">${cat.label}</div>
+    </div>
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th style="width:32px">#</th>
+          <th>Наименование</th>
+          <th style="width:90px">SKU</th>
+          <th style="width:130px">В наличии (новые)</th>
+          <th style="width:160px">Б/У единиц</th>
+          <th style="width:120px">Скидка на комплект</th>
+          <th style="width:180px">Заметка</th>
+          <th style="width:60px"></th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  cat.items.forEach((item, i) => {
+    if (!INV[item.id]) INV[item.id] = { qty: 0, used: [], note: '' };
+    const inv = INV[item.id];
+    const qty = inv.qty || 0;
+    const usedCount = (inv.used || []).length;
+
+    let statusHtml = '';
+    if (item.price === null) {
+      statusHtml = `<span class="status" style="background:rgba(255,255,255,0.04);color:#555;font-size:10px;">В разработке</span>`;
+    } else if (qty === 0 && usedCount === 0) {
+      statusHtml = `<span class="status out">Нет</span>`;
+      lowItems.push(item.name);
+    } else if (qty <= 1) {
+      statusHtml = `<span class="status low-stock">Мало</span>`;
+      lowItems.push(item.name);
+    } else {
+      statusHtml = `<span class="status in-stock">В наличии</span>`;
+    }
+
+    const avgDiscount = usedCount > 0
+      ? Math.round((inv.used || []).reduce((s,u) => s + (u.discount||0), 0) / usedCount)
+      : 0;
+
+    html += `
+      <tr data-id="${item.id}">
+        <td style="color:var(--text3);font-size:11px">${i+1}</td>
+        <td>
+          <div class="item-name">
+            ${statusHtml}
+            <div>
+              <div>${item.name}</div>
+              ${item.price !== null ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;">${item.price?.toLocaleString('ru-RU')} ₽</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td><span class="item-sku">${item.sku}</span></td>
+        <td>
+          <div class="qty-wrap">
+            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
+            <input class="qty-input" type="number" min="0" value="${qty}" data-id="${item.id}" onchange="onQtyChange('${item.id}', this.value)">
+            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+          </div>
+        </td>
+        <td>
+          <div class="used-count">
+            <span class="used-badge" onclick="toggleUsedRow('${item.id}')">
+              ${usedCount > 0 ? `БУ: ${usedCount}` : '+ Б/У'}
+            </span>
+            ${usedCount > 0 ? `<span class="used-label">шт.</span>` : ''}
+          </div>
+        </td>
+        <td>
+          ${usedCount > 0 ? `<span style="color:#2196f3;font-size:11px;font-weight:700;">−100 000 ₽</span>` : `<span style="color:var(--text3);font-size:11px">—</span>`}
+        </td>
+        <td>
+          <input class="note-input" type="text" placeholder="Заметка..." value="${inv.note || ''}" data-id="${item.id}">
+        </td>
+        <td>
+          <div class="row-actions">
+            <button class="action-btn" onclick="toggleUsedRow('${item.id}')" title="Б/У">☰</button>
+          </div>
+        </td>
+      </tr>
+      <tr class="used-details-row" id="used-row-${item.id}" style="display:none;">
+        <td colspan="8">
+          <div style="margin-bottom:8px;font-size:11px;color:var(--blue);letter-spacing:1px;font-weight:600;text-transform:uppercase;">Б/У единицы — ${item.name}</div>
+          <div class="used-items-list" id="used-list-${item.id}"></div>
+          <button class="add-used-btn" onclick="addUsedUnit('${item.id}')">+ Добавить Б/У единицу</button>
+        </td>
+      </tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  if (lowItems.length > 0) {
+    html += `<div class="low-warn">⚠ <span>Нужно пополнить:</span> ${lowItems.join(', ')}</div>`;
+  }
+
+  content.innerHTML = html;
+
+  // Render used units
+  cat.items.forEach(item => {
+    renderUsedUnits(item.id);
+  });
+
+  updateStats();
+  updateBadges();
+}
+
+function toggleUsedRow(id) {
+  const row = document.getElementById('used-row-' + id);
+  if (row) {
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    renderUsedUnits(id);
+  }
+}
+
+function renderUsedUnits(id) {
+  const list = document.getElementById('used-list-' + id);
+  if (!list) return;
+  if (!INV[id]) INV[id] = { qty: 0, used: [], note: '' };
+  const used = INV[id].used || [];
+
+  if (used.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:4px 0;font-style:italic;">Нет Б/У единиц</div>';
+    return;
+  }
+
+  list.innerHTML = used.map((u, i) => {
+    const item = findItem(id);
+    const basePrice = item?.price || 0;
+    const discountedPrice = basePrice > 0 ? Math.round(basePrice * (1 - (u.discount||0)/100)) : 0;
+    return `
+    <div class="used-item-card">
+      <div class="used-item-label">Б/У #${i+1}</div>
+      <div class="used-item-row">
+        <span>Скидка:</span>
+        <input type="number" min="0" max="70" value="${u.discount || 0}"
+          class="used-discount-input" data-id="${id}" data-idx="${i}"
+          onchange="updateUsedDiscount('${id}', ${i}, this.value)"
+        >
+        <span style="color:var(--text3)">%</span>
+      </div>
+      ${basePrice > 0 ? `<div style="font-size:11px;color:var(--orange);">→ ${discountedPrice.toLocaleString('ru-RU')} ₽</div>` : ''}
+      <div class="used-item-row" style="margin-top:4px;">
+        <input type="text" placeholder="Состояние..." value="${u.note || ''}"
+          style="background:var(--bg2);border:1px solid var(--border2);border-radius:2px;color:var(--text2);font-size:11px;padding:4px 7px;width:150px;outline:none;"
+          onchange="updateUsedNote('${id}', ${i}, this.value)"
+        >
+      </div>
+      <button onclick="removeUsedUnit('${id}', ${i})"
+        style="background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;text-align:left;margin-top:4px;padding:0;">
+        × удалить
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function addUsedUnit(id) {
+  if (!INV[id]) INV[id] = { qty: 0, used: [], note: '' };
+  if (!INV[id].used) INV[id].used = [];
+  INV[id].used.push({ discount: 20, note: '' });
+  renderUsedUnits(id);
+  updateStats();
+}
+
+function removeUsedUnit(id, idx) {
+  INV[id].used.splice(idx, 1);
+  renderUsedUnits(id);
+  renderCurrentTab();
+}
+
+function updateUsedDiscount(id, idx, val) {
+  if (!INV[id] || !INV[id].used[idx]) return;
+  INV[id].used[idx].discount = parseInt(val) || 0;
+  renderUsedUnits(id);
+}
+
+function updateUsedNote(id, idx, val) {
+  if (!INV[id] || !INV[id].used[idx]) return;
+  INV[id].used[idx].note = val;
+}
+
+function changeQty(id, delta) {
+  if (!INV[id]) INV[id] = { qty: 0, used: [], note: '' };
+  INV[id].qty = Math.max(0, (INV[id].qty || 0) + delta);
+  const inp = document.querySelector(`.qty-input[data-id="${id}"]`);
+  if (inp) inp.value = INV[id].qty;
+  updateStats();
+  updateBadges();
+}
+
+function onQtyChange(id, val) {
+  if (!INV[id]) INV[id] = { qty: 0, used: [], note: '' };
+  INV[id].qty = Math.max(0, parseInt(val) || 0);
+  updateStats();
+  updateBadges();
+}
+
+function findItem(id) {
+  for (const cat of Object.values(CATALOG)) {
+    const found = cat.items.find(i => i.id === id);
+    if (found) return found;
+  }
+  return null;
+}
+
+function updateStats() {
+  let total = 0, instock = 0, low = 0, usedTotal = 0;
+  for (const [catKey, cat] of Object.entries(CATALOG)) {
+    for (const item of cat.items) {
+      if (item.price === null) continue;
+      total++;
+      const inv = INV[item.id] || {};
+      const qty = inv.qty || 0;
+      const usedCount = (inv.used || []).length;
+      usedTotal += usedCount;
+      if (qty > 1) instock++;
+      if (qty <= 1) low++;
+    }
+  }
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-instock').textContent = instock;
+  document.getElementById('stat-low').textContent = low;
+  document.getElementById('stat-used').textContent = usedTotal;
+}
+
+function updateBadges() {
+  for (const [catKey, cat] of Object.entries(CATALOG)) {
+    const badgeEl = document.getElementById('badge-' + catKey);
+    if (!badgeEl) continue;
+    const outItems = cat.items.filter(item => {
+      if (item.price === null) return false;
+      const inv = INV[item.id] || {};
+      return (inv.qty || 0) === 0 && (inv.used || []).length === 0;
+    });
+    if (outItems.length > 0) {
+      badgeEl.textContent = outItems.length;
+      badgeEl.className = 'badge';
+    } else {
+      badgeEl.textContent = '✓';
+      badgeEl.className = 'badge ok';
+    }
+  }
+}
+
+function renderSummary() {
+  collectFromDOM();
+  let html = `<div class="section-header"><div class="section-title">Сводный отчёт</div></div>`;
+
+  for (const [catKey, cat] of Object.entries(CATALOG)) {
+    html += `
+      <div style="margin-bottom:24px;">
+        <div style="font-family:Montserrat;font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+          ${cat.label}
+          <span style="flex:1;height:1px;background:var(--border2);display:inline-block;"></span>
+        </div>
+        <table class="inv-table">
+          <thead><tr>
+            <th>Наименование</th><th>Новые</th><th>Б/У</th><th>Скидка (avg)</th><th>Статус</th>
+          </tr></thead>
+          <tbody>`;
+
+    for (const item of cat.items) {
+      if (item.price === null) continue;
+      const inv = INV[item.id] || {};
+      const qty = inv.qty || 0;
+      const used = inv.used || [];
+      const avgDisc = used.length > 0
+        ? Math.round(used.reduce((s,u) => s + (u.discount||0), 0) / used.length)
+        : 0;
+
+      let status = qty === 0 && used.length === 0
+        ? `<span class="status out">Нет</span>`
+        : qty <= 1
+          ? `<span class="status low-stock">Мало</span>`
+          : `<span class="status in-stock">В наличии</span>`;
+
+      html += `<tr>
+        <td><strong>${item.name}</strong></td>
+        <td style="font-family:Montserrat;font-weight:700;color:${qty > 0 ? 'var(--green)' : 'var(--red)'};">${qty}</td>
+        <td style="font-family:Montserrat;font-weight:700;color:var(--blue);">${used.length}</td>
+        <td>${avgDisc > 0 ? `<span style="color:var(--orange);">−${avgDisc}%</span>` : '—'}</td>
+        <td>${status}</td>
+      </tr>`;
+    }
+
+    html += `</tbody></table></div>`;
+  }
+
+  document.getElementById('tabContent').innerHTML = html;
+}
+
+function exportJSON() {
+  collectFromDOM();
+  const data = JSON.stringify({ timestamp: new Date().toISOString(), inventory: INV }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ebanda-inventory-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  showToast('↓ JSON экспортирован');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── INIT ──
+  // Баннер если открыто через file://
+  if (window.location.protocol === 'file:') {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:999;background:#1a1200;border-bottom:2px solid #f08000;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;';
+    banner.innerHTML = '<div style="font-size:12px;color:rgba(255,200,0,0.9);"><strong style="color:#f08000;">⚠ Для синхронизации со склада и конфигуратором</strong> — запусти <code style="background:rgba(240,128,0,0.15);padding:2px 8px;border-radius:3px;font-size:11px;">start-server.sh</code> (Mac/Linux) или <code style="background:rgba(240,128,0,0.15);padding:2px 8px;border-radius:3px;font-size:11px;">start-server.bat</code> (Windows) и открой через <strong>http://localhost:8765</strong></div><button onclick="this.parentNode.remove()" style="background:none;border:none;color:#666;font-size:18px;cursor:pointer;flex-shrink:0;">×</button>';
+    document.body.appendChild(banner);
+  }
+
+(async () => {
+  await loadInventory();
+  renderCurrentTab();
+  updateStats();
+  updateBadges();
+})();
+
+// Auto-save every 2 min
+setInterval(() => {
+  collectFromDOM();
+  await idbSet('ebanda_inventory', INV);
+  const now = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('lastSaved').textContent = 'Авто-сохранено ' + now;
+}, 120000);
+</script>
+</body>
+</html>
