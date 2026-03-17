@@ -865,7 +865,7 @@ let INV = {};
     } catch(e) {}
   }
 
-  async function loadInventory() {
+  async async function loadInventory() {
   const saved = await idbGet('ebanda_inventory');
   if (saved) {
     INV = typeof saved === 'string' ? JSON.parse(saved) : saved;
@@ -878,12 +878,31 @@ let INV = {};
     }
   }
 }
+async function loadInventoryAsync() {
+  try {
+    const sbData = await loadFromSupabase();
+    if (sbData && Object.keys(sbData).length > 0) {
+      INV = sbData;
+      await idbSet('ebanda_inventory', INV);
+      renderCurrentTab();
+      updateStats();
+      updateBadges();
+      document.getElementById('lastSaved').textContent = '☁ Загружено из облака';
+      return;
+    }
+  } catch(e) { console.log('Supabase load error:', e); }
+  await loadInventory();
+}
 
-async function saveInventory() {
+
+async async function saveInventory() {
   // Collect all current values from DOM
   collectFromDOM();
   await idbSet('ebanda_inventory', INV);
   const now = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  saveToSupabase(INV).then(ok => {
+    document.getElementById('lastSaved').textContent = (ok ? '☁ ' : '') + 'Сохранено в ' + now;
+  });
   document.getElementById('lastSaved').textContent = 'Сохранено в ' + now;
   showToast('✓ Данные сохранены');
   updateStats();
