@@ -2,8 +2,6 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-  
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EBanda — Управление складом</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -564,44 +562,33 @@
   }
   .toast.show { transform: translateY(0); opacity: 1; }
 </style>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = 'https://nljgejiggwybjfdssjsy.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5samdlamlnZ3d5YmpmZHNzanN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODIyODYsImV4cCI6MjA4OTM1ODI4Nn0.L_lF9eGgjh-7BW0-LaF_XmJdNcf4mtFxPYVlugbG3KQ';
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _SB_URL = 'https://nljgejiggwybjfdssjsy.supabase.co';
+const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5samdlamlnZ3d5YmpmZHNzanN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODIyODYsImV4cCI6MjA4OTM1ODI4Nn0.L_lF9eGgjh-7BW0-LaF_XmJdNcf4mtFxPYVlugbG3KQ';
+const _sb = supabase.createClient(_SB_URL, _SB_KEY);
 
-async function loadFromSupabase() {
+async function sbLoadInventory() {
   try {
     const { data, error } = await _sb.from('inventory').select('*');
-    if (error || !data?.length) return null;
+    if (error || !data || !data.length) return null;
     const inv = {};
-    data.forEach(row => {
-      inv[row.id] = {
-        qty: row.qty || 0,
-        used: JSON.parse(row.used || '[]'),
-        note: row.note || ''
-      };
-    });
+    data.forEach(r => { inv[r.id] = { qty: r.qty||0, used: JSON.parse(r.used||'[]'), note: r.note||'' }; });
     return inv;
   } catch(e) { return null; }
 }
 
-async function saveToSupabase(inv) {
+async function sbSaveInventory(inv) {
   try {
-    const rows = Object.entries(inv).map(([id, data]) => ({
-      id,
-      qty: data.qty || 0,
-      used: JSON.stringify(data.used || []),
-      note: data.note || '',
+    const rows = Object.entries(inv).map(([id, d]) => ({
+      id, qty: d.qty||0, used: JSON.stringify(d.used||[]), note: d.note||'',
       updated_at: new Date().toISOString()
     }));
-    const { error } = await _sb.from('inventory').upsert(rows, { onConflict: 'id' });
-    return !error;
+    await _sb.from('inventory').upsert(rows, { onConflict: 'id' });
+    return true;
   } catch(e) { return false; }
 }
 </script>
-
 </head>
 <body>
 
@@ -820,55 +807,28 @@ const CATALOG = {
 let INV = {};
 
 
-  // ── IndexedDB Storage (работает в file://) ──
-  const DB_NAME = 'ebanda_db';
-  const DB_STORE = 'inventory';
-  let _db = null;
-  let _memFallback = {};
-
-  function openDB() {
-    return new Promise((resolve, reject) => {
-      if (_db) { resolve(_db); return; }
-      const req = indexedDB.open(DB_NAME, 1);
-      req.onupgradeneeded = e => {
-        e.target.result.createObjectStore(DB_STORE);
-      };
-      req.onsuccess = e => { _db = e.target.result; resolve(_db); };
-      req.onerror = e => { console.warn('IDB error', e); resolve(null); };
-    });
+  // ── STORAGE: работает и в file:// и на сервере ──
+  const _memStorage = {}; // fallback если всё заблокировано
+  
+  function storageGet(key) {
+    try { const v = localStorage.getItem(key); if (v !== undefined) return v; } catch(e) {}
+    return _memStorage[key] || null;
   }
-
-  async function idbGet(key) {
-    try {
-      const db = await openDB();
-      if (!db) return _memFallback[key] || null;
-      return new Promise(resolve => {
-        const tx = db.transaction(DB_STORE, 'readonly');
-        const req = tx.objectStore(DB_STORE).get(key);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => resolve(_memFallback[key] || null);
-      });
-    } catch(e) { return _memFallback[key] || null; }
+  function storageSet(key, val) {
+    try { localStorage.setItem(key, val); return; } catch(e) {}
+    _memStorage[key] = val;
   }
-
-  async function idbSet(key, val) {
-    _memFallback[key] = val;
-    try {
-      const db = await openDB();
-      if (!db) return;
-      return new Promise(resolve => {
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        tx.objectStore(DB_STORE).put(val, key);
-        tx.oncomplete = resolve;
-        tx.onerror = resolve;
-      });
-    } catch(e) {}
+  function storageCheck() {
+    try { localStorage.setItem('_test', '1'); localStorage.removeItem('_test'); return 'localStorage'; }
+    catch(e) { return 'memory'; }
   }
+  
+  const _storageMode = storageCheck();
 
-  async async function loadInventory() {
-  const saved = await idbGet('ebanda_inventory');
+  function loadInventory() {
+  const saved = storageGet('ebanda_inventory');
   if (saved) {
-    INV = typeof saved === 'string' ? JSON.parse(saved) : saved;
+    INV = JSON.parse(saved);
   } else {
     // Initialize with zeros
     for (const [cat, data] of Object.entries(CATALOG)) {
@@ -878,35 +838,17 @@ let INV = {};
     }
   }
 }
-async function loadInventoryAsync() {
-  try {
-    const sbData = await loadFromSupabase();
-    if (sbData && Object.keys(sbData).length > 0) {
-      INV = sbData;
-      await idbSet('ebanda_inventory', INV);
-      renderCurrentTab();
-      updateStats();
-      updateBadges();
-      document.getElementById('lastSaved').textContent = '☁ Загружено из облака';
-      return;
-    }
-  } catch(e) { console.log('Supabase load error:', e); }
-  await loadInventory();
-}
 
-
-async async function saveInventory() {
+function saveInventory() {
   // Collect all current values from DOM
   collectFromDOM();
-  await idbSet('ebanda_inventory', INV);
+  storageSet('ebanda_inventory', JSON.stringify(INV));
   const now = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  saveToSupabase(INV).then(ok => {
-    document.getElementById('lastSaved').textContent = (ok ? '☁ ' : '') + 'Сохранено в ' + now;
-  });
   document.getElementById('lastSaved').textContent = 'Сохранено в ' + now;
   showToast('✓ Данные сохранены');
   updateStats();
   updateBadges();
+  sbSaveInventory(INV).then(ok => { if(ok) document.getElementById('lastSaved').textContent += ' ☁'; });
 }
 
 function collectFromDOM() {
@@ -1270,39 +1212,8 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-
-  // ── ЗАЩИТА СКЛАДА ── только владелец
-  const _tg = window.Telegram?.WebApp;
-  if (_tg) { _tg.ready(); _tg.expand(); }
-  
-  // ВСТАВЬ СЮДА СВОЙ TELEGRAM USER ID:
-  const OWNER_ID = null; // например: 123456789
-  
-  const _userId = _tg?.initDataUnsafe?.user?.id || null;
-  
-  function checkOwner() {
-    if (!OWNER_ID) return; // если не задан — пускаем всех (для теста)
-    if (_userId !== OWNER_ID) {
-      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:rgba(255,255,255,0.3);font-family:Inter,sans-serif;font-size:14px;text-align:center;padding:20px;">🔒 Доступ только для владельца</div>';
-    }
-  }
-  
 // ── INIT ──
 
-  // ── TELEGRAM GUARD — только для владельца ──
-  const tgApp = window.Telegram?.WebApp;
-  if (tgApp) {
-    tgApp.ready();
-    tgApp.expand();
-    // Замени на свой Telegram user ID
-    // Узнать свой ID: напиши @userinfobot в Telegram
-    const OWNER_ID = null; // ← ВСТАВЬ СВОЙ ID сюда, например: 123456789
-
-    const userId = tgApp.initDataUnsafe?.user?.id;
-    if (OWNER_ID && userId !== OWNER_ID) {
-      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#555;font-family:Montserrat;font-size:14px;text-align:center;padding:32px;">🔒<br><br>Доступ закрыт.<br>Этот раздел только для администратора.</div>';
-    }
-  }
   // Баннер если открыто через file://
   if (window.location.protocol === 'file:') {
     const banner = document.createElement('div');
@@ -1311,18 +1222,22 @@ function showToast(msg) {
     document.body.appendChild(banner);
   }
 
-(async () => {
-  await checkOwner();
-  loadInventoryAsync();
+sbLoadInventory().then(sbData => {
+  if (sbData && Object.keys(sbData).length > 0) {
+    INV = sbData;
+    document.getElementById('lastSaved').textContent = '☁ Загружено из облака';
+  } else {
+    loadInventory();
+  }
   renderCurrentTab();
   updateStats();
   updateBadges();
-})();
+});
 
 // Auto-save every 2 min
 setInterval(() => {
   collectFromDOM();
-  await idbSet('ebanda_inventory', INV);
+  storageSet('ebanda_inventory', JSON.stringify(INV));
   const now = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   document.getElementById('lastSaved').textContent = 'Авто-сохранено ' + now;
 }, 120000);
