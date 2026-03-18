@@ -592,6 +592,80 @@ async function sbSaveInventory(inv) {
 </head>
 <body>
 
+<script>
+// ── ЗАЩИТА СКЛАДА ──
+const OWNER_IDS = [5845432275, 510057818];
+
+function checkAccess() {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  
+  // В браузере (не Telegram) — показываем форму пароля
+  if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+    showPasswordForm();
+    return;
+  }
+  
+  const userId = tg.initDataUnsafe.user.id;
+  
+  if (OWNER_IDS.includes(userId)) {
+    // Доступ разрешён
+    document.getElementById('accessGate').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    tg.ready();
+    tg.expand();
+    initApp();
+  } else {
+    // Доступ запрещён
+    document.getElementById('accessGate').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0a0a0a;flex-direction:column;gap:16px;padding:32px;">
+        <div style="font-size:48px;">🔒</div>
+        <div style="font-family:Montserrat,sans-serif;font-weight:700;font-size:18px;color:#e8e8e8;text-align:center;">Доступ закрыт</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.4);text-align:center;">Эта страница только для владельца магазина</div>
+      </div>`;
+  }
+}
+
+function showPasswordForm() {
+  document.getElementById('accessGate').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0a0a0a;flex-direction:column;gap:16px;padding:32px;">
+      <div style="font-size:40px;">📦</div>
+      <div style="font-family:Montserrat,sans-serif;font-weight:700;font-size:18px;color:#e8e8e8;">Склад EBanda</div>
+      <div style="width:100%;max-width:300px;display:flex;flex-direction:column;gap:10px;">
+        <input id="pwdInput" type="password" placeholder="Пароль" 
+          style="background:#141414;border:1px solid #2a2a2a;border-radius:6px;padding:12px 16px;color:#e8e8e8;font-size:14px;width:100%;outline:none;"
+          onkeydown="if(event.key==='Enter')checkPwd()"/>
+        <button onclick="checkPwd()" 
+          style="background:#f08000;border:none;border-radius:6px;padding:13px;font-family:Montserrat,sans-serif;font-weight:700;font-size:13px;color:#000;cursor:pointer;">
+          Войти
+        </button>
+        <div id="pwdError" style="color:#f44;font-size:12px;text-align:center;display:none;">Неверный пароль</div>
+      </div>
+    </div>`;
+}
+
+function checkPwd() {
+  const pwd = document.getElementById('pwdInput')?.value;
+  // Пароль = первые 6 цифр основного ID
+  if (pwd === '584543') {
+    document.getElementById('accessGate').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('pwdError').style.display = 'block';
+  }
+}
+
+window.addEventListener('load', checkAccess);
+</script>
+
+<div id="accessGate" style="position:fixed;inset:0;z-index:9999;background:#0a0a0a;">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
+    <div style="font-family:Montserrat,sans-serif;font-size:13px;letter-spacing:3px;color:#f08000;">ЗАГРУЗКА...</div>
+  </div>
+</div>
+<div id="mainApp" style="display:none;">
+
+
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-logo">EBanda <span>/ Склад</span></div>
@@ -1241,6 +1315,16 @@ setInterval(() => {
   const now = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   document.getElementById('lastSaved').textContent = 'Авто-сохранено ' + now;
 }, 120000);
+
+// ── initApp called by access gate ──
+async function initApp() {
+  await loadInventoryAsync();
+  renderCurrentTab();
+  updateStats();
+  updateBadges();
+}
 </script>
+
+</div>
 </body>
 </html>
