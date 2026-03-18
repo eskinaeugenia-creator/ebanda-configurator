@@ -282,6 +282,7 @@ function App() {
   const [wingAddons,setWingAddons] = useState([]);
   const [showWings,setShowWings]   = useState(false);
   const [buSel,setBuSel] = useState({});
+  const [isOwner,setIsOwner] = useState(false);
 
   useEffect(() => {
     _sb.from('inventory').select('*').then(({data}) => {
@@ -296,7 +297,9 @@ function App() {
       const tg = window.Telegram.WebApp;
       tg.ready(); tg.expand();
       const u = tg.initDataUnsafe?.user;
-      if (u) { setTgUser(u); // Сначала проверяем есть ли пользователь
+      if (u) { setTgUser(u);
+        if ([5845432275,510057818].includes(u.id)) setIsOwner(true);
+        // Сначала проверяем есть ли пользователь
     _sb.from('users').select('id,visits_count').eq('id',u.id).single()
       .then(({data}) => {
         if (data) {
@@ -400,7 +403,26 @@ function App() {
           <span style={{fontSize:11,color:C.text3}}>при выборе любого комплекта и доп. аккумулятора</span>
         </div>
 
-                {/* БУ КНОПКА */}
+                {/* СКЛАД — только для владельца */}
+        {isOwner && (
+          <button
+            onClick={()=>{
+              const url='https://ebanda-configurator.vercel.app/ebanda-inventory.html';
+              if(window.Telegram?.WebApp?.openLink) window.Telegram.WebApp.openLink(url);
+              else window.open(url,'_blank');
+            }}
+            style={{width:'100%',background:'rgba(240,128,0,0.06)',border:'1px solid rgba(240,128,0,0.2)',borderRadius:6,padding:'10px 16px',display:'flex',alignItems:'center',gap:10,marginBottom:12,cursor:'pointer'}}
+          >
+            <span style={{fontSize:16}}>📦</span>
+            <div style={{flex:1,textAlign:'left'}}>
+              <div style={{fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:12,color:'rgba(240,128,0,0.8)',letterSpacing:1}}>УПРАВЛЕНИЕ СКЛАДОМ</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,0.3)',marginTop:1}}>Только для владельца · EBanda</div>
+            </div>
+            <span style={{fontSize:18,color:'rgba(240,128,0,0.4)'}}>›</span>
+          </button>
+        )}
+
+        {/* БУ КНОПКА */}
         {buAvail && (
           <button onClick={()=>setScreen('bu')} style={{width:'100%',background:'linear-gradient(135deg,rgba(33,150,243,0.08),rgba(33,150,243,0.02))',border:'1px solid rgba(33,150,243,0.3)',borderRadius:6,padding:'14px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:14,marginBottom:20,transition:'all 0.2s'}}>
             <div style={{display:'flex',alignItems:'center',gap:14}}>
@@ -424,8 +446,8 @@ function App() {
             const has=inStock(inv,b.id);
             return (
               <button key={b.id} onClick={()=>{setBoard(b);setAddons([]);setWingAddons([]);}}
-                style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'12px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:5}}>
-                {img('board',b.name) && <img src={img('board',b.name)} style={{width:100,height:80,objectFit:'contain'}} alt={b.name}/>}
+                style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'14px 8px 10px',display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
+                {img('board',b.name) && <img src={img('board',b.name)} style={{width:'100%',height:120,objectFit:'contain'}} alt={b.name}/>}
                 <div style={{fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:11,color:active?C.orange:C.text,letterSpacing:1}}>{b.name}</div>
                 <div style={{fontSize:10,color:C.text3}}>{b.vol}</div>
                 <div style={{fontSize:11,color:C.text2}}>{fmt(b.base)}</div>
@@ -486,8 +508,8 @@ function App() {
                 const active=fw.id===cItem.id, has=inStock(inv,cItem.invId);
                 return (
                   <button key={cItem.id} onClick={()=>!cItem.na&&setFw(cItem)} disabled={cItem.na}
-                    style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'10px 6px',display:'flex',flexDirection:'column',alignItems:'center',gap:4,opacity:cItem.na?0.4:1,cursor:cItem.na?'not-allowed':'pointer'}}>
-                    {img('comp',`frontwing|${cItem.name}`) && <img src={img('comp',`frontwing|${cItem.name}`)} style={{width:90,height:55,objectFit:'contain'}} alt={cItem.name}/>}
+                    style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'12px 6px 10px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,opacity:cItem.na?0.4:1,cursor:cItem.na?'not-allowed':'pointer'}}>
+                    {img('comp',`frontwing|${cItem.name}`) && <img src={img('comp',`frontwing|${cItem.name}`)} style={{width:'100%',height:70,objectFit:'contain'}} alt={cItem.name}/>}
                     <div style={{fontSize:11,fontWeight:600,color:active?C.orange:C.text,textAlign:'center'}}>{cItem.name}</div>
                     <div style={{fontSize:11,color:cItem.na?C.text3:cItem.price===0?C.text3:C.green}}>{cItem.na?'В разработке':cItem.price===0?'Включено':`+ ${fmt(cItem.price)}`}</div>
                     {has&&!cItem.na && <GreenDot/>}
@@ -501,7 +523,7 @@ function App() {
                 return (
                   <button key={gItem.id} onClick={()=>setFw(gItem)}
                     style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'10px 6px',display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                    {img('comp',`frontwing|${gItem.name}`) && <img src={img('comp',`frontwing|${gItem.name}`)} style={{width:90,height:55,objectFit:'contain'}} alt={gItem.name}/>}
+                    {img('comp',`frontwing|${gItem.name}`) && <img src={img('comp',`frontwing|${gItem.name}`)} style={{width:'100%',height:70,objectFit:'contain'}} alt={gItem.name}/>}
                     <div style={{fontSize:11,fontWeight:600,color:active?C.orange:C.text,textAlign:'center'}}>{gItem.name}</div>
                     <div style={{fontSize:11,color:gItem.price===0?C.text3:C.green}}>{gItem.price===0?'Включено':`+ ${fmt(gItem.price)}`}</div>
                     {has && <GreenDot/>}
@@ -524,7 +546,7 @@ function App() {
             return (
               <button key={item.id} onClick={()=>setRw(item)}
                 style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'12px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
-                {img('comp',`rearwing|${item.name}`) && <img src={img('comp',`rearwing|${item.name}`)} style={{width:110,height:55,objectFit:'contain'}} alt={item.name}/>}
+                {img('comp',`rearwing|${item.name}`) && <img src={img('comp',`rearwing|${item.name}`)} style={{width:'100%',height:75,objectFit:'contain'}} alt={item.name}/>}
                 <div style={{fontSize:12,fontWeight:600,color:active?C.orange:C.text}}>{item.name}</div>
                 <div style={{fontSize:11,color:item.price===0?C.text3:C.green}}>{item.price===0?'Включено':`+ ${fmt(item.price)}`}</div>
                 {has && <GreenDot/>}
@@ -540,7 +562,7 @@ function App() {
             const active=batt.id===item.id, has=inStock(inv,item.invId);
             return (
               <button key={item.id} onClick={()=>setBatt(item)}
-                style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'12px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:5}}>
+                style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'14px 8px 10px',display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
                 {img('comp',`battery|${item.name}`) && <img src={img('comp',`battery|${item.name}`)} style={{width:90,height:68,objectFit:'contain'}} alt={item.name}/>}
                 <div style={{fontSize:13,fontWeight:700,color:active?C.orange:C.text}}>{item.name}</div>
                 <div style={{fontSize:10,color:C.text3}}>{item.sub}</div>
@@ -558,7 +580,7 @@ function App() {
             const active=chg.id===item.id, has=inStock(inv,item.invId);
             return (
               <button key={item.id} onClick={()=>setChg(item)}
-                style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'12px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:5}}>
+                style={{position:'relative',background:active?C.orange2:C.card,border:`1px solid ${active?C.orange:C.border2}`,borderRadius:4,padding:'14px 8px 10px',display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
                 {img('comp',`charger|${item.name}`) && <img src={img('comp',`charger|${item.name}`)} style={{width:85,height:64,objectFit:'contain'}} alt={item.name}/>}
                 <div style={{fontSize:13,fontWeight:700,color:active?C.orange:C.text}}>{item.name}</div>
                 <div style={{fontSize:10,color:C.text3}}>{item.sub}</div>
@@ -601,11 +623,11 @@ function App() {
               const wImg = img('wingaddon',wa.imgKey);
               return (
                 <button key={wa.name} onClick={()=>toggleWingAddon(wa)}
-                  style={{width:'100%',background:sel?'rgba(240,128,0,0.08)':C.card,border:`1px solid ${sel?C.orange:C.border2}`,borderRadius:4,padding:'10px 12px',display:'flex',alignItems:'center',gap:10,marginBottom:5,transition:'all 0.15s'}}>
+                  style={{width:'100%',background:sel?'rgba(240,128,0,0.08)':C.card,border:`1px solid ${sel?C.orange:C.border2}`,borderRadius:4,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,marginBottom:6,transition:'all 0.15s'}}>
                   <div style={{width:18,height:18,borderRadius:3,border:`2px solid ${sel?C.orange:C.border2}`,background:sel?C.orange:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     {sel && <span style={{color:'#000',fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
                   </div>
-                  {wImg && <img src={wImg} style={{width:50,height:32,objectFit:'contain',flexShrink:0}} alt={wa.name}/>}
+                  {wImg && <img src={wImg} style={{width:80,height:50,objectFit:'contain',flexShrink:0}} alt={wa.name}/>}
                   <span style={{flex:1,fontSize:13,color:C.text,textAlign:'left'}}>{wa.name}</span>
                   <span style={{fontSize:12,color:C.green,fontWeight:600,flexShrink:0}}>+ {fmt(wa.price)}</span>
                 </button>
@@ -622,11 +644,11 @@ function App() {
             const aImg = img('addon',addon.name);
             return (
               <button key={addon.name} onClick={()=>toggleAddon(addon)}
-                style={{background:sel?'rgba(240,128,0,0.08)':C.card,border:`1px solid ${sel?C.orange:C.border2}`,borderRadius:4,padding:'10px 12px',display:'flex',alignItems:'center',gap:10,transition:'all 0.15s'}}>
+                style={{background:sel?'rgba(240,128,0,0.08)':C.card,border:`1px solid ${sel?C.orange:C.border2}`,borderRadius:4,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,transition:'all 0.15s'}}>
                 <div style={{width:18,height:18,borderRadius:3,border:`2px solid ${sel?C.orange:C.border2}`,background:sel?C.orange:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   {sel && <span style={{color:'#000',fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
                 </div>
-                {aImg && <img src={aImg} style={{width:44,height:32,objectFit:'contain',flexShrink:0}} alt={addon.name}/>}
+                {aImg && <img src={aImg} style={{width:64,height:48,objectFit:'contain',flexShrink:0}} alt={addon.name}/>}
                 <span style={{flex:1,fontSize:13,color:C.text,textAlign:'left'}}>{addon.name}</span>
                 {has && <InStockBadge style={{flexShrink:0}}/>}
                 <span style={{fontSize:12,color:C.green,fontWeight:600,flexShrink:0}}>+ {fmt(addon.price)}</span>
@@ -720,18 +742,19 @@ function BuScreen({inv,buSel,setBuSel,board,mast,motor,fw,rw,batt,chg,onBack,onO
           const avail = cat.items.filter(item=>hasUsed(inv,cat.getInvId(item)));
           if (!avail.length) return null;
           return (
-            <div key={cat.key} style={{marginBottom:16}}>
+            <div key={cat.key} style={{marginBottom:20}}>
               <div style={{fontSize:10,letterSpacing:2,textTransform:'uppercase',color:'rgba(33,150,243,0.7)',marginBottom:8,fontFamily:'Montserrat,sans-serif',fontWeight:700}}>{cat.label}</div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8}}>
                 {avail.map(item => {
                   const active=buSel[cat.key]===item.id;
                   const iSrc = img('comp',`${cat.key}|${item.name}`) || img('board',item.name);
                   return (
                     <button key={item.id} onClick={()=>setSel(cat.key,item.id)}
-                      style={{background:active?'rgba(33,150,243,0.15)':'#161616',border:`1px solid ${active?'rgba(33,150,243,0.5)':'#2a2a2a'}`,color:active?C.blue:'rgba(255,255,255,0.55)',padding:'8px 14px',borderRadius:3,display:'inline-flex',alignItems:'center',gap:7,transition:'all 0.15s'}}>
-                      {iSrc && <img src={iSrc} style={{width:30,height:22,objectFit:'contain'}} alt={item.name}/>}
-                      <span style={{fontSize:9,fontWeight:700,color:C.blue,opacity:active?1:0.5,fontFamily:'Montserrat,sans-serif',letterSpacing:0.5}}>Б/У</span>
-                      <span style={{fontSize:12,fontWeight:active?600:400}}>{item.name}</span>
+                      style={{position:'relative',background:active?'rgba(33,150,243,0.12)':'#141414',border:`1px solid ${active?'rgba(33,150,243,0.5)':'#222'}`,borderRadius:4,padding:'10px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:6,transition:'all 0.15s',cursor:'pointer'}}>
+                      {iSrc && <img src={iSrc} style={{width:'100%',height:60,objectFit:'contain'}} alt={item.name}/>}
+                      <div style={{fontSize:11,fontWeight:600,color:active?C.blue:'rgba(255,255,255,0.8)',textAlign:'center',lineHeight:1.3}}>{item.name}</div>
+                      <span style={{fontSize:9,fontWeight:700,color:C.blue,opacity:active?1:0.6,fontFamily:'Montserrat,sans-serif',letterSpacing:0.5,background:'rgba(33,150,243,0.1)',padding:'2px 6px',borderRadius:2}}>Б/У</span>
+                      {active && <span style={{position:'absolute',top:5,right:5,width:8,height:8,borderRadius:'50%',background:C.blue}}/>}
                     </button>
                   );
                 })}
