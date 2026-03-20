@@ -253,6 +253,24 @@ const ADDONS_MAP = {
     {name:'Powerflight Battery 23',price:260000,invId:'batt-2300'},
   ],
 };
+const ALL_ADDONS = [
+  {name:'Board Bag PRO 90L',price:20000,invId:'bag-90'},
+  {name:'Board Bag MAX 130L',price:20000,invId:'bag-130'},
+  {name:'Board Bag MASTER 75L',price:20000,invId:'bag-75'},
+  {name:'Mast Bag Grey',price:10000,invId:'mastbag-g'},
+  {name:'Mast Bag Black',price:10000,invId:'mastbag-b'},
+  {name:'Mover-S',price:12000,invId:'mover-s'},
+  {name:'Mover-L',price:12000,invId:'mover-l'},
+  {name:'EVO Propeller',price:4000,invId:'prop-evo'},
+  {name:'Foiling Propeller',price:35000,invId:'prop-foil'},
+  {name:'Jet Drive',price:50000,invId:'jet-drive'},
+  {name:'Scooter Kit',price:110000,invId:'scooter'},
+  {name:'EVO Pod 90L',price:37000,invId:'pod-90'},
+  {name:'EVO Pod 130L',price:37000,invId:'pod-130'},
+  {name:'EVO Remote',price:30000,invId:'remote'},
+  {name:'Powerflight Battery 18',price:220000,invId:'batt-1800'},
+  {name:'Powerflight Battery 23',price:260000,invId:'batt-2300'},
+];
 const ADDON_SUBS = {
   'Board Bag PRO 90L':      'Защитный чехол · 90 л',
   'Board Bag MAX 130L':     'Защитный чехол · 130 л',
@@ -865,6 +883,7 @@ function App() {
   const [buUnit,setBuUnit] = useState({});
   const [buAddons,setBuAddons] = useState([]);
   const [isOwner,setIsOwner] = useState(false);
+  const [accessoriesOnly,setAccessoriesOnly] = useState(false);
 
   useEffect(() => {
     _sb.from('inventory').select('*').then(({data}) => {
@@ -913,9 +932,9 @@ function App() {
 
   const compPrice = mast.price+motor.price+fw.price+rw.price+batt.price+chg.price;
   const addonsPrice = addons.reduce((s,a)=>s+a.price,0) + wingAddons.reduce((s,a)=>s+a.price,0);
-  const subtotal = board.base+compPrice+addonsPrice;
+  const subtotal = accessoriesOnly ? addonsPrice : board.base+compPrice+addonsPrice;
   const hasBattAddon = addons.some(a=>a.name.includes('Powerflight Battery'));
-  const discount = hasBattAddon ? Math.round(subtotal*0.05) : 0;
+  const discount = (hasBattAddon && !accessoriesOnly) ? Math.round(subtotal*0.05) : 0;
   const total = subtotal-discount;
 
   function buildMsg(isBu) {
@@ -933,7 +952,14 @@ function App() {
       lines.push('', buFullKit ? `💰 Итого: ${fmt(buTotal)} (скидка −100 000 ₽)` : `💰 Итого: ${fmt(buBase)}`);
       return lines.join('\n');
     }
-    const lines = ['🏄 НОВЫЙ КОМПЛЕКТ — Waydoo Flyer EVO','',
+    if (accessoriesOnly) {
+      const lines = ['🛒 АКСЕССУАРЫ — Waydoo Flyer EVO',''];
+      if (addons.length) lines.push(...addons.map(a=>`  • ${a.name} — ${fmt(a.price)}`));
+      if (wingAddons.length) lines.push(...wingAddons.map(a=>`  • ${a.name} (крыло) — ${fmt(a.price)}`));
+      lines.push('',`💰 Итого: ${fmt(total)}`);
+      return lines.join('\n');
+    }
+        const lines = ['🏄 НОВЫЙ КОМПЛЕКТ — Waydoo Flyer EVO','',
       `Доска: ${board.name} (${board.vol})`,`Мачта: ${mast.name}`,`Мотор: ${motor.name}`,
       `Пер. крыло: ${fw.name}`,`Задн. крыло: ${rw.name}`,`Батарея: ${batt.name}`,`Зарядка: ${chg.name}`,
     ];
@@ -947,7 +973,7 @@ function App() {
     const url = `https://t.me/sales_ebanda?text=${encodeURIComponent(buildMsg(isBu))}`;
     if (window.Telegram?.WebApp?.openTelegramLink) window.Telegram.WebApp.openTelegramLink(url);
     else window.open(url,'_blank');
-    _sb.from('configurations').insert({user_id:tgUser?.id||null,board:board.name,mast:mast.name,motor:motor.name,front_wing:fw.name,rear_wing:rw.name,battery:batt.name,charger:chg.name,addons:JSON.stringify([...addons,...wingAddons].map(a=>a.name)),total_price:isBu?0:total}).catch(()=>{});
+    _sb.from('configurations').insert({user_id:tgUser?.id||null,board:accessoriesOnly?'Только аксессуары':board.name,mast:accessoriesOnly?'-':mast.name,motor:accessoriesOnly?'-':motor.name,front_wing:accessoriesOnly?'-':fw.name,rear_wing:accessoriesOnly?'-':rw.name,battery:accessoriesOnly?'-':batt.name,charger:accessoriesOnly?'-':chg.name,addons:JSON.stringify([...addons,...wingAddons].map(a=>a.name)),total_price:isBu?0:total}).catch(()=>{});
   }
 
   const toggleAddon = a => setAddons(prev=>prev.find(x=>x.name===a.name)?prev.filter(x=>x.name!==a.name):[...prev,a]);
@@ -1088,12 +1114,29 @@ function App() {
       </div>
 
       <div style={{padding:'0 16px'}}>
-        <p style={{fontSize:12,color:C.text2,lineHeight:1.65,marginBottom:10}}>Соберите свой идеальный сетап — цена обновляется мгновенно.</p>
-        <div style={{display:'flex',alignItems:'baseline',gap:8,padding:'8px 12px',background:'rgba(240,128,0,0.07)',borderLeft:`2px solid ${C.orange}`,borderRadius:'0 3px 3px 0',marginBottom:16}}>
+        <p style={{fontSize:12,color:C.text2,lineHeight:1.65,marginBottom:10}}>{accessoriesOnly ? 'Выберите аксессуары — цена обновляется мгновенно.' : 'Соберите свой идеальный сетап — цена обновляется мгновенно.'}</p>
+        {!accessoriesOnly && <div style={{display:'flex',alignItems:'baseline',gap:8,padding:'8px 12px',background:'rgba(240,128,0,0.07)',borderLeft:`2px solid ${C.orange}`,borderRadius:'0 3px 3px 0',marginBottom:16}}>
           <span style={{fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:13,color:C.orange}}>5% СКИДКА</span>
           <span style={{fontSize:11,color:C.text3}}>при выборе любого комплекта и доп. аккумулятора</span>
+        </div>}
+
+        {/* TOGGLE: только аксессуары */}
+        <div style={{display:'flex',gap:6,marginBottom:16}}>
+          <button onClick={()=>{setAccessoriesOnly(false);setAddons([]);setWingAddons([]);}}
+            style={{flex:1,padding:'10px 0',borderRadius:4,fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:11,letterSpacing:1,
+              background:!accessoriesOnly?C.orange:'transparent',color:!accessoriesOnly?'#000':C.text3,
+              border:`1px solid ${!accessoriesOnly?C.orange:C.border2}`,transition:'all 0.2s'}}>
+            КОМПЛЕКТ
+          </button>
+          <button onClick={()=>{setAccessoriesOnly(true);setAddons([]);setWingAddons([]);}}
+            style={{flex:1,padding:'10px 0',borderRadius:4,fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:11,letterSpacing:1,
+              background:accessoriesOnly?C.orange:'transparent',color:accessoriesOnly?'#000':C.text3,
+              border:`1px solid ${accessoriesOnly?C.orange:C.border2}`,transition:'all 0.2s'}}>
+            ТОЛЬКО АКСЕССУАРЫ
+          </button>
         </div>
 
+        {!accessoriesOnly && <>
         {/* БУ КНОПКА */}
         {buAvail && (
           <button onClick={()=>setScreen('bu')} style={{width:'100%',background:'linear-gradient(135deg,rgba(33,150,243,0.08),rgba(33,150,243,0.02))',border:'1px solid rgba(33,150,243,0.3)',borderRadius:6,padding:'14px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:14,marginBottom:20,transition:'all 0.2s'}}>
@@ -1283,6 +1326,7 @@ function App() {
 
           {inStock(inv,'remote') && <InStockBadge style={{marginLeft:'auto'}}/>}
         </div>
+        </>}
 
         {/* ADDONS */}
         <SectionLabel text="Дополнительно"/>
@@ -1331,7 +1375,7 @@ function App() {
 
         {/* Regular addons */}
         <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:8}}>
-          {(ADDONS_MAP[board.name]||[]).map(addon => {
+          {(accessoriesOnly ? ALL_ADDONS : (ADDONS_MAP[board.name]||[])).map(addon => {
             const sel=addons.find(a=>a.name===addon.name);
             const has=inStock(inv,addon.invId);
             const aImg = img('addon',addon.name);
@@ -1345,7 +1389,7 @@ function App() {
                 <div style={{flex:1,textAlign:'left'}}>
                   <div style={{fontSize:13,color:C.text}}>{addon.name}</div>
                   {ADDON_SUBS[addon.name] && <div style={{fontSize:10,color:C.text3,marginTop:2}}>{ADDON_SUBS[addon.name]}</div>}
-                  {addon.name.includes('Powerflight Battery') && (
+                  {addon.name.includes('Powerflight Battery') && !accessoriesOnly && (
                     <div style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:5,background:'rgba(240,128,0,0.12)',border:'1px solid rgba(240,128,0,0.3)',borderRadius:3,padding:'3px 8px'}}>
                       <span style={{fontSize:9,fontWeight:700,color:C.orange,fontFamily:'Montserrat,sans-serif',letterSpacing:0.5}}>−5% на корзину · только при покупке с комплектом</span>
                     </div>
@@ -1367,7 +1411,8 @@ function App() {
 
         {/* PRICE SUMMARY */}
         <div style={{background:C.card,border:`1px solid ${C.border2}`,borderRadius:6,padding:'16px',marginTop:16}}>
-          <div style={{fontSize:9,letterSpacing:2.5,textTransform:'uppercase',color:C.text3,marginBottom:12,fontFamily:'Montserrat,sans-serif'}}>{`WAYDOO EVO ${board.name}`}</div>
+          <div style={{fontSize:9,letterSpacing:2.5,textTransform:'uppercase',color:C.text3,marginBottom:12,fontFamily:'Montserrat,sans-serif'}}>{accessoriesOnly ? 'АКСЕССУАРЫ' : `WAYDOO EVO ${board.name}`}</div>
+          {!accessoriesOnly && <>
           <PriceLine label={`${board.name} (${board.vol})`} val={board.base}/>
           {mast.price>0  && <PriceLine label={mast.name}  val={mast.price}  plus/>}
           {motor.price>0 && <PriceLine label={motor.name} val={motor.price} plus/>}
@@ -1375,6 +1420,7 @@ function App() {
           {rw.price>0    && <PriceLine label={rw.name}    val={rw.price}    plus/>}
           {batt.price>0  && <PriceLine label={batt.name}  val={batt.price}  plus/>}
           {chg.price>0   && <PriceLine label={chg.name}   val={chg.price}   plus/>}
+          </>}
           {addons.map(a  => <PriceLine key={a.name}  label={a.name}  val={a.price}  plus/>)}
           {wingAddons.map(a=> <PriceLine key={a.name} label={`${a.name} (отд.)`} val={a.price} plus/>)}
           {discount>0 && <PriceLine label="Скидка 5% (доп. аккумулятор)" val={discount} orange negative/>}
