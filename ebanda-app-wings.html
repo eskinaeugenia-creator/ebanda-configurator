@@ -942,7 +942,7 @@ function App() {
         const item = selId ? cat.items.find(i=>i.id===selId) : null;
         lines.push(`${cat.label}: ${item?item.name:'—'}`);
       });
-                      const buBase = board.base+mast.price+motor.price+fw.price+rw.price+batt.price+chg.price;
+                              const buBase = BU_CATS.filter(c=>c.key!=='remote').reduce((s,c)=>{const item=buSel[c.key]?c.items.find(i=>i.id===buSel[c.key]):null;return s+(item?(c.key==='board'?(item.base||0):(item.price||0)):0);},0);
       const buFullKit = BU_CATS.every(cat=>buSel[cat.key]);
       const buTotal = buFullKit ? Math.max(0,buBase-100000) : buBase;
       if (buAddons.length) { lines.push('','Дополнительно:',...buAddons.map(a=>`  • ${a.name}`)); }
@@ -1527,7 +1527,7 @@ function BuScreen({inv,buSel,setBuSel,buAddons,setBuAddons,board,mast,motor,fw,r
   const setSel = (key,id) => setBuSel(prev=>({...prev,[key]:prev[key]===id?null:id}));
   const toggleBuAddon = a => setBuAddons(prev=>prev.find(x=>x.invId===a.invId)?prev.filter(x=>x.invId!==a.invId):[...prev,a]);
   const buFullKit = BU_CATS.every(cat=>buSel[cat.key]);
-  const buBase = board.base+mast.price+motor.price+fw.price+rw.price+batt.price+chg.price;
+    const buBase = BU_CATS.filter(c=>c.key!=='remote').reduce((s,c)=>{const item=buSel[c.key]?c.items.find(i=>i.id===buSel[c.key]):null;return s+(item?(c.key==='board'?(item.base||0):(item.price||0)):0);},0);
   const buTotal = buFullKit ? Math.max(0,buBase-100000) : buBase;
 
   return (
