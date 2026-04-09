@@ -993,7 +993,7 @@ function App() {
   );
 
   if (screen==='bu') return (<>
-    <BuScreen inv={inv} buSel={buSel} setBuSel={setBuSel} buAddons={buAddons} setBuAddons={setBuAddons} board={board} mast={mast} motor={motor} fw={fw} rw={rw} batt={batt} chg={chg} onBack={()=>setScreen('main')} onOrder={()=>{openTg(true);}} C={C} openWingDetail={openWingDetail} buUnit={buUnit} setBuUnit={setBuUnit}/> addToCart={addToCart}
+    <BuScreen inv={inv} buSel={buSel} setBuSel={setBuSel} buAddons={buAddons} setBuAddons={setBuAddons} board={board} mast={mast} motor={motor} fw={fw} rw={rw} batt={batt} chg={chg} onBack={()=>setScreen('main')} onOrder={()=>{openTg(true);}} C={C} openWingDetail={openWingDetail} buUnit={buUnit} setBuUnit={setBuUnit} addToCart={addToCart}/>
     {bottomSheet && (
       <BottomSheet
         wing={{name:bottomSheet.name}}
@@ -1587,7 +1587,7 @@ const ConditionBadge = ({condition, small}) => {
   );
 };
 
-function BuScreen({inv,buSel,setBuSel,buAddons,setBuAddons,board,mast,motor,fw,rw,batt,chg,onBack,onOrder,openWingDetail,buUnit,setBuUnit}) {
+function BuScreen({inv,buSel,setBuSel,buAddons,setBuAddons,board,mast,motor,fw,rw,batt,chg,onBack,onOrder,openWingDetail,buUnit,setBuUnit,addToCart}) {
   const setSel = (key,id) => setBuSel(prev=>({...prev,[key]:prev[key]===id?null:id}));
   const toggleBuAddon = a => setBuAddons(prev=>prev.find(x=>x.invId===a.invId)?prev.filter(x=>x.invId!==a.invId):[...prev,a]);
   const buFullKit = BU_CATS.every(cat=>buSel[cat.key]);
@@ -1693,6 +1693,7 @@ function BuScreen({inv,buSel,setBuSel,buAddons,setBuAddons,board,mast,motor,fw,r
                   <div style={{fontSize:10,color:C.text3}}>скидка −100 000 ₽ применена</div>
                 </div>
               </div>
+              <button onClick={()=>addToCart({id:'bu-kit',label:'БУ комплект',price:buTotal,details:'Б/У комплект со скидкой −100 000 ₽',qty:1})} style={{width:'100%',background:'none',border:'2px solid '+C.orange,borderRadius:4,padding:'12px 0',fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:14,color:C.orange,cursor:'pointer',marginBottom:10}}>В корзину</button>
               <button onClick={onOrder}
                 style={{width:'100%',background:C.blue,border:'none',borderRadius:4,padding:'14px 0',fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:12,letterSpacing:2,textTransform:'uppercase',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
