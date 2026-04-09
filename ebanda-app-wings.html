@@ -268,7 +268,7 @@ const ALL_ADDONS = [
   {name:'EVO Pod 90L',price:37000,invId:'pod-90'},
   {name:'EVO Pod 130L',price:37000,invId:'pod-130'},
   {name:'EVO Remote',price:30000,invId:'remote'},
-  {name:'Powerflight Battery 18',price:220000,invId:'batt-1800'},
+    {name:'Powerflight Battery 18',price:220000,invId:'batt-1800'},
   {name:'Powerflight Battery 23',price:260000,invId:'batt-2300'},
 ];
 const ADDON_SUBS = {
@@ -942,7 +942,7 @@ function App() {
         const item = selId ? cat.items.find(i=>i.id===selId) : null;
         lines.push(`${cat.label}: ${item?item.name:'—'}`);
       });
-      const buBase = board.base+mast.price+motor.price+fw.price+rw.price+batt.price+chg.price;
+              const buBase = BU_CATS.filter(c=>c.key!=='remote').reduce((s,c)=>{const item=buSel[c.key]?c.items.find(i=>i.id===buSel[c.key]):null;return s+(item?(c.key==='board'?(item.base||0):(item.price||0)):0);},0);
       const buFullKit = BU_CATS.every(cat=>buSel[cat.key]);
       const buTotal = buFullKit ? Math.max(0,buBase-100000) : buBase;
       if (buAddons.length) { lines.push('','Дополнительно:',...buAddons.map(a=>`  • ${a.name}`)); }
