@@ -1602,34 +1602,6 @@ function BuScreen({inv,buSel,setBuSel,buAddons,setBuAddons,board,mast,motor,fw,r
           );
         })}
 
-        {/* ДОПОЛНИТЕЛЬНО */}
-        {BU_ADDONS.filter(a=>hasUsed(inv,a.invId)).length > 0 && (
-          <div style={{marginBottom:20}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:'uppercase',color:'rgba(33,150,243,0.7)',marginBottom:8,fontFamily:'Montserrat,sans-serif',fontWeight:700}}>Дополнительно</div>
-            {BU_ADDONS.filter(a=>hasUsed(inv,a.invId)).map(addon => {
-              const sel = buAddons.find(x=>x.invId===addon.invId);
-              const aImg = img('addon',addon.img) || img('comp',`addon|${addon.img}`);
-              const addonUnits = (inv[addon.invId]&&inv[addon.invId].used)||[];
-              const firstUnit = addonUnits[0];
-              return (
-                <button key={addon.invId} onClick={()=>toggleBuAddon(addon)}
-                  style={{position:'relative',width:'100%',background:sel?'rgba(33,150,243,0.12)':'#141414',border:`1px solid ${sel?'rgba(33,150,243,0.5)':'#222'}`,borderRadius:4,padding:'10px 12px',display:'flex',alignItems:'center',gap:12,marginBottom:6,cursor:'pointer',transition:'all 0.15s'}}>
-                  {aImg && <img src={aImg} style={{width:48,height:36,objectFit:'contain',flexShrink:0}} alt={addon.name}/>}
-                  <div style={{flex:1,textAlign:'left'}}>
-                    <div style={{fontSize:12,color:sel?C.blue:'rgba(255,255,255,0.8)',fontWeight:sel?600:400}}>{addon.name}</div>
-                    {firstUnit && firstUnit.condition ? <div style={{marginTop:3}}><ConditionBadge condition={firstUnit.condition} small/></div> : null}
-                    {firstUnit && firstUnit.note && <div style={{fontSize:9,color:'rgba(255,255,255,0.35)',marginTop:2}}>{firstUnit.note}</div>}
-                    {addonUnits.length > 1 && <div style={{fontSize:9,color:C.blue,fontWeight:600,marginTop:2}}>{addonUnits.length} шт.</div>}
-                  </div>
-                  <span style={{fontSize:9,fontWeight:700,color:C.blue,opacity:sel?1:0.6,fontFamily:'Montserrat,sans-serif',background:'rgba(33,150,243,0.1)',padding:'2px 6px',borderRadius:2}}>Б/У</span>
-                  {sel && <span style={{width:8,height:8,borderRadius:'50%',background:C.blue,flexShrink:0}}/>}
-                  {ADDON_SPECS[addon.name] && <div onPointerDown={(e)=>{e.stopPropagation();e.preventDefault();}} onClick={(e)=>{e.stopPropagation();e.preventDefault();openWingDetail(addon.name,'addon')}} style={{position:'absolute',top:6,right:6,width:24,height:24,borderRadius:'50%',background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',zIndex:10}}><span style={{fontSize:11,color:'rgba(255,255,255,0.5)',fontStyle:'italic',fontWeight:700}}>i</span></div>}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         <div style={{background:C.card,border:`1px solid ${C.border2}`,borderRadius:6,padding:'14px 16px',marginTop:8}}>
           {(() => {
             const total_cats=BU_CATS.filter(cat=>cat.items.some(item=>hasUsed(inv,cat.getInvId(item)))).length;
