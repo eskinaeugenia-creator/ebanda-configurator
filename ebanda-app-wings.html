@@ -1374,7 +1374,7 @@ function App() {
                 }}>● В наличии</span>}
                 <span style={{fontSize:12,color:C.green,fontWeight:600,flexShrink:0}}>+ {fmt(wa.price)}</span>
                 </button>
-                <div onClick={()=>openWingDetail(wa.name,wa.name.includes(' C')?'carbon':'glassfiber')} style={{position:'absolute',top:8,right:8,width:28,height:28,borderRadius:'50%',background:'rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',zIndex:3}}>
+                <div onClick={()=>openWingDetail(wa.name,'front')} style={{position:'absolute',top:8,right:8,width:28,height:28,borderRadius:'50%',background:'rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',zIndex:3}}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                 </div>
               </div>
