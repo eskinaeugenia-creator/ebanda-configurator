@@ -616,10 +616,10 @@ const BU_CATS = [
   {key:'board',    label:'Доска',       items:BOARDS,   getInvId:b=>b.id},
   {key:'mast',     label:'Мачта',       items:MASTS,    getInvId:m=>m.invId},
   {key:'motor',    label:'Мотор',       items:MOTORS,   getInvId:m=>m.invId},
-  {key:'frontwing',label:'Пер. крыло',  items:ALL_FW.filter(w=>!w.na),getInvId:w=>w.invId},
-  {key:'rearwing', label:'Задн. крыло', items:WINGS_R,  getInvId:w=>w.invId},
-  {key:'battery',  label:'Батарея',     items:BATTERIES,getInvId:b=>b.invId},
-  {key:'charger',  label:'Зарядка',     items:CHARGERS, getInvId:c=>c.invId},
+  {key:'frontwing',label:'Переднее крыло',  items:ALL_FW.filter(w=>!w.na),getInvId:w=>w.invId},
+  {key:'rearwing', label:'Заднее крыло', items:WINGS_R,  getInvId:w=>w.invId},
+  {key:'battery',  label:'Аккумулятор',     items:BATTERIES,getInvId:b=>b.invId},
+  {key:'charger',  label:'Зарядное устройство',     items:CHARGERS, getInvId:c=>c.invId},
   {key:'remote',   label:'Пульт',       items:[{id:'remote',name:'EVO Remote',invId:'remote'}],getInvId:()=>'remote'},
 ];
 
@@ -960,7 +960,7 @@ function App() {
     }
         const lines = ['🏄 НОВЫЙ КОМПЛЕКТ — Waydoo Flyer EVO','',
       `Доска: ${board.name} (${board.vol})`,`Мачта: ${mast.name}`,`Мотор: ${motor.name}`,
-      `Пер. крыло: ${fw.name}`,`Задн. крыло: ${rw.name}`,`Батарея: ${batt.name}`,`Зарядка: ${chg.name}`,
+      `Переднее крыло: ${fw.name}`,`Заднее крыло: ${rw.name}`,`Аккумулятор: ${batt.name}`,`Зарядное устройство: ${chg.name}`,
     ];
     if (addons.length||wingAddons.length) { lines.push('','Допы:',...addons.map(a=>`  • ${a.name}`),...wingAddons.map(a=>`  • ${a.name} (отд.)`)); }
     lines.push('',`💰 Итого: ${fmt(total)}`);
@@ -1444,7 +1444,7 @@ function App() {
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
             Написать в Telegram
           </button>
-                  <button onClick={()=>addToCart({id:'new-kit',label:`${board.name} (новый)`,price:total,details:`${mast.name}\nМотор: ${motor.name}\nКрыло: ${fw.name}\nХвостовое: ${rw.name}${batt&&batt.price>0?'\nАккумулятор: '+batt.name:''}${chg&&chg.price>0?'\nЗарядное: '+chg.name:''}${addons.length?'\nАксессуары: '+addons.map(a=>a.name).join(', '):''}`,qty:1})} style={{width:'100%',background:'transparent',border:`1px solid ${C.orange}`,borderRadius:4,padding:'12px 0',fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:14,color:C.orange,marginTop:8,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                  <button onClick={()=>addToCart({id:'new-kit',label:`${board.name} (новый)`,price:total,details:`${mast.name}\nМотор: ${motor.name}\nПереднее крыло: ${fw.name}\nЗаднее крыло: ${rw.name}${batt&&batt.price>0?'\nАккумулятор: '+batt.name:''}${chg&&chg.price>0?'\nЗарядное устройство: '+chg.name:''}${addons.length?'\nАксессуары: '+addons.map(a=>a.name).join(', '):''}`,qty:1})} style={{width:'100%',background:'transparent',border:`1px solid ${C.orange}`,borderRadius:4,padding:'12px 0',fontFamily:'Montserrat,sans-serif',fontWeight:700,fontSize:14,color:C.orange,marginTop:8,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                                       В корзину
                                               </button>
