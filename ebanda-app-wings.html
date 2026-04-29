@@ -119,6 +119,81 @@ const _sb = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5samdlamlnZ3d5YmpmZHNzanN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODIyODYsImV4cCI6MjA4OTM1ODI4Nn0.L_lF9eGgjh-7BW0-LaF_XmJdNcf4mtFxPYVlugbG3KQ'
 );
 
+// ============ CRM: пользователи и конфигурации ============
+async function trackUser() {
+  try {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) { console.log('CRM: not in Telegram'); return; }
+    tg.ready();
+    const u = tg.initDataUnsafe?.user;
+    if (!u?.id) { console.log('CRM: no user data'); return; }
+    
+    window.__tgUserId = u.id;
+    const now = new Date().toISOString();
+    
+    // Проверяем, есть ли юзер
+    const { data: existing } = await _sb
+      .from('users')
+      .select('id, visits_count')
+      .eq('id', u.id)
+      .maybeSingle();
+    
+    if (existing) {
+      // Существующий — увеличиваем счётчик визитов
+      const newCount = (existing.visits_count || 0) + 1;
+      await _sb.from('users').update({
+        last_visit: now,
+        visits_count: newCount,
+        username: u.username || null,
+        first_name: u.first_name || null,
+        last_name: u.last_name || null
+      }).eq('id', u.id);
+      console.log('CRM: returning user', u.id, 'visit #' + newCount);
+    } else {
+      // Новый — создаём
+      await _sb.from('users').insert({
+        id: u.id,
+        username: u.username || null,
+        first_name: u.first_name || null,
+        last_name: u.last_name || null,
+        first_visit: now,
+        last_visit: now,
+        visits_count: 1
+      });
+      console.log('CRM: NEW user', u.id, u.username || u.first_name);
+    }
+  } catch(e) { console.warn('CRM trackUser failed:', e); }
+}
+trackUser();
+
+// Сохранение конфигурации (вызывать при отправке заказа)
+window.saveConfig = async function(cfg) {
+  if (!window.__tgUserId) { console.log('CRM: no user, skip save'); return; }
+  
+  // 1) История в configurations
+  await _sb.from('configurations').insert({
+    user_id: window.__tgUserId,
+    board: cfg.board || null,
+    mast: cfg.mast || null,
+    motor: cfg.motor || null,
+    front_wing: cfg.front_wing || cfg.frontWing || null,
+    rear_wing: cfg.rear_wing || cfg.rearWing || null,
+    battery: cfg.battery || null,
+    charger: cfg.charger || null,
+    addons: cfg.addons || null,
+    total_price: cfg.total_price || cfg.totalPrice || null,
+    created_at: new Date().toISOString()
+  });
+  
+  // 2) Последний конфиг в users
+  await _sb.from('users').update({
+    last_config: JSON.stringify(cfg)
+  }).eq('id', window.__tgUserId);
+  
+  console.log('CRM: config saved for user', window.__tgUserId);
+};
+// ============ /CRM ============
+
 // ── COLORS ──
 const C = {
   bg:'#0a0a0a',bg2:'#111',bg3:'#161616',
