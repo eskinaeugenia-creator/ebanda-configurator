@@ -1502,8 +1502,8 @@ function App() {
           {mast.price>0  && <PriceLine label={mast.name}  val={mast.price}  plus/>}
           {motor.price>0 && <PriceLine label={motor.name} val={motor.price} plus/>}
           {fw.price>0    && <PriceLine label={fw.name}    val={fw.price}    plus/>}
-          {rw.price>0    && <PriceLine label={rw.name}    val={rw.price}    plus/>}
-          {batt.price>0  && <PriceLine label={batt.name}  val={batt.price}  plus/>}
+                    <PriceLine label={rw.name}    val={rw.price}    plus={rw.price>0}/>
+                              {batt.price>0  && <PriceLine label={batt.name}  val={batt.price}  plus/>}
           {chg.price>0   && <PriceLine label={chg.name}   val={chg.price}   plus/>}
           </>}
           {addons.map(a  => <PriceLine key={a.name}  label={a.name}  val={a.price}  plus/>)}
